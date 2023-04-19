@@ -29,7 +29,7 @@ public class QueryingDAO {
      */
     public int count() {
         String sql = "select count(*) from customers";
-        return 0;
+        return this.jdbcTemplate.queryForObject(sql, Integer.class);
     }
 
     /**
@@ -37,7 +37,7 @@ public class QueryingDAO {
      */
     public String getLastName(Long id) {
         String sql = "select last_name from customers where id = ?";
-        return null;
+        return this.jdbcTemplate.queryForObject(sql, String.class, id);
     }
 
     /**
@@ -45,7 +45,14 @@ public class QueryingDAO {
      */
     public Customer findCustomerById(Long id) {
         String sql = "select id, first_name, last_name from customers where id = ?";
-        return null;
+        return this.jdbcTemplate.queryForObject(sql,
+                (resultSet, rowNum) -> {
+                    Customer customer = new Customer(
+                            resultSet.getString("first_name"),
+                            resultSet.getString("last_name")
+                    );
+                    return customer;
+                }, id);
     }
 
     /**
@@ -53,7 +60,16 @@ public class QueryingDAO {
      */
     public List<Customer> findAllCustomers() {
         String sql = "select id, first_name, last_name from customers";
-        return null;
+        List<Customer> customers = this.jdbcTemplate.query(sql,
+                (resultSet, rowNum) -> {
+                    Customer customer = new Customer(
+                            resultSet.getString("first_name"),
+                            resultSet.getString("last_name")
+                    );
+                    return customer;
+                }
+        );
+        return customers;
     }
 
     /**
@@ -61,6 +77,15 @@ public class QueryingDAO {
      */
     public List<Customer> findCustomerByFirstName(String firstName) {
         String sql = "select id, first_name, last_name from customers where first_name = ?";
-        return null;
+        List<Customer> customers = this.jdbcTemplate.query(sql,
+                (resultSet, rowNum) -> {
+                    Customer customer = new Customer(
+                            resultSet.getString("first_name"),
+                            resultSet.getString("last_name")
+                    );
+                    return customer;
+                }
+        , firstName);
+        return customers;
     }
 }
