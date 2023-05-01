@@ -40,7 +40,7 @@ public class AuthController {
      * email=email@email.com&password=1234
      */
     @PostMapping("/login/session")
-    public ResponseEntity sessionLogin(HttpServletRequest request) {
+    public ResponseEntity sessionLogin(HttpServletRequest request, HttpSession session) {
         // TODO: email과 password 값 추출하기
         String email = request.getParameter("email");
         String password = request.getParameter("password");
@@ -50,8 +50,7 @@ public class AuthController {
         }
 
         // TODO: Session에 인증 정보 저장 (key: SESSION_KEY, value: email값)
-        HttpSession session = request.getSession();
-        session.setAttribute("email", email);
+        session.setAttribute(SESSION_KEY, email);
         return ResponseEntity.ok().build();
     }
 
@@ -66,7 +65,7 @@ public class AuthController {
     @GetMapping("/members/me")
     public ResponseEntity findMyInfo(HttpSession session) {
         // TODO: Session을 통해 인증 정보 조회하기 (key: SESSION_KEY)
-        String email = session.getAttribute("email").toString();
+        String email = session.getAttribute(SESSION_KEY).toString();
         MemberResponse member = authService.findMember(email);
         return ResponseEntity.ok().body(member);
     }
