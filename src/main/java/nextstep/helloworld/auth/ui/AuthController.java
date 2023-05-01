@@ -2,9 +2,13 @@ package nextstep.helloworld.auth.ui;
 
 import nextstep.helloworld.auth.application.AuthService;
 import nextstep.helloworld.auth.application.AuthorizationException;
+import nextstep.helloworld.auth.dto.AuthInfo;
 import nextstep.helloworld.auth.dto.MemberResponse;
 import nextstep.helloworld.auth.dto.TokenRequest;
 import nextstep.helloworld.auth.dto.TokenResponse;
+import nextstep.helloworld.auth.infrastructure.AuthorizationExtractor;
+import nextstep.helloworld.auth.infrastructure.BasicAuthorizationExtractor;
+import nextstep.helloworld.auth.infrastructure.BearerAuthorizationExtractor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +22,8 @@ import javax.servlet.http.HttpSession;
 public class AuthController {
     private static final String SESSION_KEY = "USER";
     private AuthService authService;
+    private AuthorizationExtractor<String> bearerAuthorizationExtractor = new BearerAuthorizationExtractor();
+    private AuthorizationExtractor<AuthInfo> basicAuthorizationExtractor = new BasicAuthorizationExtractor();
 
 
     public AuthController(AuthService authService) {
@@ -38,8 +44,6 @@ public class AuthController {
         // TODO: email과 password 값 추출하기
         String email = request.getParameter("email");
         String password = request.getParameter("password");
-        System.out.println("email = " + email);
-        System.out.println("password = " + password);
 
         if (authService.checkInvalidLogin(email, password)) {
             throw new AuthorizationException();
@@ -58,10 +62,10 @@ public class AuthController {
      * cookie: JSESSIONID=E7263AC9557EF658C888F02EEF840A19
      * accept: application/json
      */
+
     @GetMapping("/members/me")
-    public ResponseEntity findMeInfo(HttpServletRequest request) {
+    public ResponseEntity findMyInfo(HttpSession session) {
         // TODO: Session을 통해 인증 정보 조회하기 (key: SESSION_KEY)
-        HttpSession session = request.getSession();
         String email = session.getAttribute("email").toString();
         MemberResponse member = authService.findMember(email);
         return ResponseEntity.ok().body(member);
@@ -98,8 +102,7 @@ public class AuthController {
     @GetMapping("/members/you")
     public ResponseEntity findYourInfo(HttpServletRequest request) {
         // TODO: authorization 헤더의 Bearer 값을 추출하기
-        String authorization = request.getHeader("Authorization");
-        String token = authorization.split(" ")[1];
+        String token = bearerAuthorizationExtractor.extract(request);
         MemberResponse member = authService.findMemberByToken(token);
         return ResponseEntity.ok().body(member);
     }
@@ -114,10 +117,8 @@ public class AuthController {
     @GetMapping("/members/my")
     public ResponseEntity findMyInfo(HttpServletRequest request) {
         // TODO: authorization 헤더의 Basic 값을 추출하기
-        String authorization = request.getHeader("Authorization");
-        System.out.println("authorization = " + authorization.split(" ")[1]);
-        String email = authorization.split(" ")[1];
-        MemberResponse member = authService.findMember(email);
+        AuthInfo authInfo = basicAuthorizationExtractor.extract(request);
+        MemberResponse member = authService.findMember(authInfo.getEmail());
         return ResponseEntity.ok().body(member);
     }
 }
